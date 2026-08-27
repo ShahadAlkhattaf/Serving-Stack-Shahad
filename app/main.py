@@ -31,16 +31,19 @@ app = FastAPI(
     version="wk2",
 )
 
-print(f"loading {MODEL_ID} on cpu ...")
+device = "cuda" if torch.cuda.is_available() else "cpu"
+dtype = torch.float16 if device == "cuda" else torch.float32
+
+print(f"loading {MODEL_ID} on {device} ...")
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
 
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_ID,
-    torch_dtype=torch.float32,
+    torch_dtype=dtype,
 )
 
-model.to("cpu")
+model.to(device)
 model.eval()
 
 print("model ready")
@@ -92,7 +95,10 @@ def chat_completions(
         return_tensors="pt",
     )
 
+    input_ids = input_ids.to(device)
+
     prompt_tokens = input_ids.shape[1]
+
 
     do_sample = req.temperature > 0
 
